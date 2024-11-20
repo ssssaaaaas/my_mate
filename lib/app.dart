@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mymate/set%20chat.dart';
 import 'package:mymate/profile.dart';
 
 import 'home.dart';
@@ -13,7 +14,7 @@ class MyMateApp extends StatelessWidget {
       title: 'MyMate',
       routes: {
         '': (context) => const LoginPage(),
-        '/': (context) => const Profile(),
+        '/': (context) => const ChatPage()
       },
       debugShowCheckedModeBanner: false,
     );
