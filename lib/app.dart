@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:mymate/navigationbar.dart';
 import 'home.dart';
 import 'login.dart';
 
@@ -11,7 +11,7 @@ class MyMateApp extends StatelessWidget {
     return MaterialApp(
       title: 'MyMate',
       routes: {
-        '/': (context) => const LoginPage(),
+        '/': (context) => const MyNavigationBar(),
         '/home': (context) => const HomePage(),
       },
       debugShowCheckedModeBanner: false,
