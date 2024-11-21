@@ -16,7 +16,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   final List<Widget> _pages = [
     const HomePage(),
     const FoodAIPage(),
-    const ProfilePage(),
+    const Profile(),
   ];
 
   void _onItemTapped(int index) {
