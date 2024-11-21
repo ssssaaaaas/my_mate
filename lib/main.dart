@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'home.dart';
-import 'login.dart';
+import 'LogIn/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +23,11 @@ class MyMateApp extends StatelessWidget {
     return MaterialApp(
       title: 'MyMate',
       theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 1,
+        ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0XFFC5524C),
           primary: const Color(0XFFC5524C),

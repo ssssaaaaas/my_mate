@@ -1,10 +1,11 @@
-//인증받기 -> 비밀번호 약한 경우, 비밀번호 6자 이상 / 메일 관련 오류 / 아이디 중복되는지 / 메일 형식 / => validation?
+import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup2.dart';
-import 'snackbar.dart';
+import '/snackbar.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -38,40 +39,64 @@ class _SignupPageState extends State<SignUpPage> {
     }
   }
 
-  Future<void> _verifyEmail() async {
+  Future<void> _signUp() async {
     try {
       User? user = _auth.currentUser;
-      await user?.reload();
-      if (user != null && user.emailVerified) {
-        // ID 중복 확인
-        bool isDuplicate = await _checkDuplicateID(_idController.text.trim());
-        if (isDuplicate) {
-          showCustomSnackbar(context, '중복된 아이디입니다. 다른 아이디를 사용하세요.');
-          return;
-        }
 
-        showCustomSnackbar(context, '이메일 인증 완료!');
-
-        // Firebase Firestore에 사용자 정보 저장
-        await _firestore.collection('users').doc(user.uid).set({
-          'id': _idController.text.trim(), // 아이디
-          'birthdate': _birthdateController.text.trim(), // 생년월일
-          'email': _emailController.text.trim(), // 이메일
-        });
-
-        // 이후 SignUpPage2로 이동
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const SignUpPage2(),
-          ),
-        );
-      } else {
-        showCustomSnackbar(context, '이메일 인증을 완료해주세요.');
+      if (user == null) {
+        showCustomSnackbar(context, "로그인 상태를 확인해주세요.");
+        return;
       }
+
+      // 사용자 정보 최신화
+      await user.reload();
+      user = _auth.currentUser;
+
+      if (user != null && !user.emailVerified) {
+        showCustomSnackbar(context, "이메일 인증을 완료해주세요.");
+        return;
+      }
+
+      // 아이디 중복 체크
+      bool isDuplicate = await _checkDuplicateID(_idController.text.trim());
+      if (isDuplicate) {
+        showCustomSnackbar(context, '중복된 아이디입니다. 다른 아이디를 사용하세요.');
+        return;
+      }
+
+      // Firestore에 사용자 정보 저장
+      String profileImageUrl = await _getDefaultProfileImage();
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'id': _idController.text.trim(),
+          'birthdate': _birthdateController.text.trim(),
+          'email': _emailController.text.trim(),
+          'profileImage': profileImageUrl,
+        });
+      } else {
+        showCustomSnackbar(context, "유저 정보를 확인할 수 없습니다.");
+      }
+
+      // 다음 페이지로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SignUpPage2(),
+        ),
+      );
     } catch (e) {
-      print("이메일 확인 실패: $e");
-      showCustomSnackbar(context, '이메일 확인 실패: ${e.toString()}');
+      print("회원가입 실패: $e");
+      showCustomSnackbar(context, "회원가입 중 오류가 발생했습니다.");
+    }
+  }
+
+  Future<String> _getDefaultProfileImage() async {
+    try {
+      // Firebase Storage에 미리 업로드된 기본 이미지의 URL 사용
+      return 'https://firebasestorage.googleapis.com/v0/b/my-mate-b5aee.firebasestorage.app/o/profile_images%2Fdefault.png?alt=media&token=f248e183-075a-46c3-9051-036f9b4c651f';
+    } catch (e) {
+      print("기본 프로필 이미지 URL 가져오기 실패: $e");
+      return ''; // 실패 시 빈 문자열 반환
     }
   }
 
@@ -222,46 +247,7 @@ class _SignupPageState extends State<SignUpPage> {
                         return;
                       }
 
-                      User? user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        // 현재 유저 정보 새로고침
-                        await user.reload();
-                        user =
-                            FirebaseAuth.instance.currentUser; // 새로고침된 정보로 업데이트
-
-                        if (user!.emailVerified) {
-                          // 이메일이 인증된 경우
-                          bool isDuplicate = await _checkDuplicateID(
-                              _idController.text.trim());
-                          if (isDuplicate) {
-                            showCustomSnackbar(
-                                context, '중복된 아이디입니다. 다른 아이디를 사용하세요.');
-                            return;
-                          }
-
-                          // Firestore에 사용자 정보 저장
-                          await _firestore
-                              .collection('users')
-                              .doc(user.uid)
-                              .set({
-                            'id': _idController.text.trim(),
-                            'birthdate': _birthdateController.text.trim(),
-                            'email': _emailController.text.trim(),
-                          });
-
-                          // 다음 페이지로 이동
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignUpPage2(),
-                            ),
-                          );
-                        } else {
-                          showCustomSnackbar(context, "메일 인증을 완료해주세요.");
-                        }
-                      } else {
-                        showCustomSnackbar(context, "이메일 인증을 먼저 진행해주세요.");
-                      }
+                      await _signUp();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0XFFC5524C),

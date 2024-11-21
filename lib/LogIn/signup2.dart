@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mymate/navigationBar.dart';
-import 'snackbar.dart';
+import '/snackbar.dart';
 
 class SignUpPage2 extends StatefulWidget {
   const SignUpPage2({Key? key}) : super(key: key);
