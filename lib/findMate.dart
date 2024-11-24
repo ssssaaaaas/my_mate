@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'setChat.dart';
 
 class FindMatePage extends StatelessWidget {
   @override
@@ -62,6 +63,19 @@ class FindMatePage extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+      floatingActionButton: Opacity(
+        opacity: 0.90,
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChatPage()),
+            );
+          },
+          backgroundColor: const Color(0xFFC5524C),
+          child: const Icon(Icons.edit),
         ),
       ),
     );

@@ -1,10 +1,11 @@
-// main, splash
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'home.dart';
-import 'login.dart';
+import 'LogIn/login.dart';
+import 'category_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,21 +21,31 @@ class MyMateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MyMate',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0XFFC5524C),
-          primary: const Color(0XFFC5524C),
-          secondary: const Color(0XFFDC9794),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
+      child: MaterialApp(
+        title: 'MyMate',
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.white,
+            elevation: 1,
+          ),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0XFFC5524C),
+            primary: const Color(0XFFC5524C),
+            secondary: const Color(0XFFDC9794),
+          ),
         ),
+        routes: {
+          '/': (context) => const SplashPage(),
+          '/login': (context) => const LoginPage(),
+          '/home': (context) => const HomePage(),
+        },
+        debugShowCheckedModeBanner: false,
       ),
-      routes: {
-        '/': (context) => const SplashPage(),
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const HomePage(),
-      },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

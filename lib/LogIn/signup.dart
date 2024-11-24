@@ -1,8 +1,11 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup2.dart';
-import 'snackbar.dart';
+import '/snackbar.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -21,115 +24,79 @@ class _SignupPageState extends State<SignUpPage> {
 
   Future<void> _sendVerificationEmail() async {
     try {
-      // 먼저 이메일/비밀번호 유효성 검사
-      if (_emailController.text.trim().isEmpty ||
-          _passwordController.text.trim().isEmpty) {
-        showCustomSnackbar(context, "이메일과 비밀번호를 입력해주세요.");
-        return;
-      }
-
-      // 임시 로그인 정보 저장
-      final UserCredential tempCredential =
-          await _auth.createUserWithEmailAndPassword(
+      await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
-      User? user = tempCredential.user;
+      User? user = _auth.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
-
-        // 인증 메일 발송 후 임시 계정 삭제
-        await user.delete();
-
         showCustomSnackbar(context, "인증 이메일이 발송되었습니다. 이메일을 확인하세요.");
-
-        // 인증 완료 후 다시 가입하도록 안내
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("이메일 인증"),
-              content: Text("이메일에서 인증 링크를 클릭한 후, 다시 가입을 진행해주세요."),
-              actions: <Widget>[
-                TextButton(
-                  child: Text("확인"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
       }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage = "이메일 인증 실패";
-
-      switch (e.code) {
-        case 'email-already-in-use':
-          errorMessage = "이미 사용 중인 이메일입니다.";
-          break;
-        case 'invalid-email':
-          errorMessage = "유효하지 않은 이메일 형식입니다.";
-          break;
-        case 'weak-password':
-          errorMessage = "비밀번호가 너무 약합니다.";
-          break;
-        default:
-          errorMessage = "이메일 인증 중 오류가 발생했습니다.";
-      }
-
-      showCustomSnackbar(context, errorMessage);
     } catch (e) {
       print("이메일 인증 실패: $e");
-      showCustomSnackbar(context, "이메일 인증 중 오류가 발생했습니다.");
+      showCustomSnackbar(context, "이메일 인증 실패: ${e.toString()}");
     }
   }
 
-  // 이메일 인증 완료 후 실제 회원가입을 처리하는 함수
   Future<void> _signUp() async {
     try {
-      // 이메일/비밀번호로 다시 회원가입
-      final UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      User? user = _auth.currentUser;
 
-      User? user = userCredential.user;
-      if (user != null) {
-        await user.reload();
-        user = _auth.currentUser;
-
-        if (user!.emailVerified) {
-          // 이메일이 인증된 경우에만 Firestore에 사용자 정보 저장
-          bool isDuplicate = await _checkDuplicateID(_idController.text.trim());
-          if (isDuplicate) {
-            showCustomSnackbar(context, '중복된 아이디입니다. 다른 아이디를 사용하세요.');
-            return;
-          }
-
-          await _firestore.collection('users').doc(user.uid).set({
-            'id': _idController.text.trim(),
-            'birthdate': _birthdateController.text.trim(),
-            'email': _emailController.text.trim(),
-          });
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SignUpPage2(),
-            ),
-          );
-        } else {
-          showCustomSnackbar(context, "이메일 인증이 완료되지 않았습니다. 인증 후 다시 시도해주세요.");
-          await user.delete(); // 인증되지 않은 계정 삭제
-        }
+      if (user == null) {
+        showCustomSnackbar(context, "로그인 상태를 확인해주세요.");
+        return;
       }
+
+      // 사용자 정보 최신화
+      await user.reload();
+      user = _auth.currentUser;
+
+      if (user != null && !user.emailVerified) {
+        showCustomSnackbar(context, "이메일 인증을 완료해주세요.");
+        return;
+      }
+
+      // 아이디 중복 체크
+      bool isDuplicate = await _checkDuplicateID(_idController.text.trim());
+      if (isDuplicate) {
+        showCustomSnackbar(context, '중복된 아이디입니다. 다른 아이디를 사용하세요.');
+        return;
+      }
+
+      // Firestore에 사용자 정보 저장
+      String profileImageUrl = await _getDefaultProfileImage();
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'id': _idController.text.trim(),
+          'birthdate': _birthdateController.text.trim(),
+          'email': _emailController.text.trim(),
+          'profileImage': profileImageUrl,
+        });
+      } else {
+        showCustomSnackbar(context, "유저 정보를 확인할 수 없습니다.");
+      }
+
+      // 다음 페이지로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SignUpPage2(),
+        ),
+      );
     } catch (e) {
       print("회원가입 실패: $e");
       showCustomSnackbar(context, "회원가입 중 오류가 발생했습니다.");
+    }
+  }
+
+  Future<String> _getDefaultProfileImage() async {
+    try {
+      // Firebase Storage에 미리 업로드된 기본 이미지의 URL 사용
+      return 'https://firebasestorage.googleapis.com/v0/b/my-mate-b5aee.firebasestorage.app/o/profile_images%2Fdefault.png?alt=media&token=f248e183-075a-46c3-9051-036f9b4c651f';
+    } catch (e) {
+      print("기본 프로필 이미지 URL 가져오기 실패: $e");
+      return ''; // 실패 시 빈 문자열 반환
     }
   }
 

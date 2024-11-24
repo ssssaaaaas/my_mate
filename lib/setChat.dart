@@ -40,7 +40,7 @@ class _ChatPageState extends State<ChatPage> {
               SizedBox(height: 15),
               TextField(
                 decoration: InputDecoration(
-                  labelText: '설명',
+                  labelText: '카테고리',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),

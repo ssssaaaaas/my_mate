@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-import 'navigationBar.dart';
-import 'singup.dart';
-import 'snackbar.dart';
+import '/navigationBar.dart';
+import 'signup.dart';
+import '/snackbar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
