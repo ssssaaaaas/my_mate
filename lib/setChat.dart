@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class ChatPage extends StatefulWidget {
@@ -12,6 +13,46 @@ class _ChatPageState extends State<ChatPage> {
   String? _selectedValue;
   final List<String> _dropdownItems = ['1명', '2명', '3명', '4명', '5명', '6명이상'];
 
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  final TextEditingController _memoController = TextEditingController();
+
+  void _saveToFirestore() async {
+    final String title = _titleController.text;
+    final String category = _categoryController.text;
+    final String memo = _memoController.text;
+
+    if (title.isEmpty ||
+        category.isEmpty ||
+        memo.isEmpty ||
+        _selectedValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('모든 필드를 입력해주세요.')),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection(category).add({
+        'title': title,
+        'gender': _selectedOption,
+        'count': _selectedValue,
+        'location': [0, 0],
+        'memo': memo,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('채팅방이 성공적으로 저장되었습니다!')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,10 +60,11 @@ class _ChatPageState extends State<ChatPage> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: Icon(Icons.close))
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.close),
+          ),
         ],
       ),
       body: Padding(
@@ -37,6 +79,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
             SizedBox(height: 20),
             TextField(
+              controller: _titleController,
               decoration: InputDecoration(
                 labelText: '채팅방 이름',
                 border: OutlineInputBorder(
@@ -46,6 +89,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
             SizedBox(height: 15),
             TextField(
+              controller: _categoryController,
               decoration: InputDecoration(
                 labelText: '카테고리',
                 border: OutlineInputBorder(
@@ -103,9 +147,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ],
             ),
-            SizedBox(
-              height: 10,
-            ),
+            SizedBox(height: 10),
             DropdownButton<String>(
               hint: const Text('인원 수'),
               value: _selectedValue,
@@ -121,9 +163,7 @@ class _ChatPageState extends State<ChatPage> {
                 });
               },
             ),
-            SizedBox(
-              height: 70,
-            ),
+            SizedBox(height: 70),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -138,6 +178,7 @@ class _ChatPageState extends State<ChatPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
+                      controller: _memoController,
                       maxLines: 5,
                       decoration: InputDecoration(
                         hintText: '메모',
@@ -151,17 +192,15 @@ class _ChatPageState extends State<ChatPage> {
                 ],
               ),
             ),
-            SizedBox(
-              height: 50,
-            ),
+            SizedBox(height: 50),
             Container(
               width: 400,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: _saveToFirestore,
                 child: Text('완료'),
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:mymate/map.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'category_provider.dart';
+import 'map.dart';
 import 'setChat.dart';
 
 class FindMatePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final selectedCategory = context.watch<CategoryProvider>().selectedCategory;
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -26,51 +31,53 @@ class FindMatePage extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(),
               child: IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MyMap()),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.location_on,
-                    color: Colors.black,
-                  )),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MyMap()),
+                  );
+                },
+                icon: Icon(
+                  Icons.location_on,
+                  color: Colors.black,
+                ),
+              ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildCategoryChip('치킨'),
-                      _buildCategoryChip('피자'),
-                      _buildCategoryChip('햄버거'),
-                      _buildCategoryChip('떡볶이'),
-                    ],
-                  ),
-                  _buildMatePost(
-                    title: '야식팟 모집중~',
-                    description: '카벤에서 같이 꼬꼬뽀끼 먹을 분들 구해요!',
-                    currentPeople: '7/10',
-                  ),
-                  _buildMatePost(
-                    title: '치킨 메이트 찾아요',
-                    description: '치코파닭 먹으면서 친해지고 싶어요!',
-                    currentPeople: '2/5',
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection(selectedCategory) // 선택된 카테고리의 데이터를 가져옴
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return const Center(child: Text('데이터 로드 중 오류가 발생했습니다.'));
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Center(child: Text('표시할 데이터가 없습니다.'));
+            }
+
+            final posts = snapshot.data!.docs;
+
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return ListTile(
+                  title: Text(post['title'] ?? '제목 없음'),
+                  subtitle: Text(post['memo'] ?? '설명 없음'),
+                  trailing: Text(post['count'] ?? '0명'),
+                );
+              },
+            );
+          },
         ),
       ),
       floatingActionButton: Opacity(
@@ -89,24 +96,31 @@ class FindMatePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryChip(String label) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Color(0xFFD9D9D9),
-        borderRadius: BorderRadius.circular(20),
+  Widget _buildCategoryChip(BuildContext context, String label) {
+    final selectedCategory = context.watch<CategoryProvider>().selectedCategory;
+
+    return GestureDetector(
+      onTap: () {
+        context.read<CategoryProvider>().setCategory(label);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selectedCategory == label ? Colors.red : Color(0xFFD9D9D9),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 12)),
       ),
-      child: Text(label, style: TextStyle(fontSize: 12)),
     );
   }
 
   Widget _buildMatePost({
     required String title,
-    required String description,
-    required String currentPeople,
+    required String memo,
+    required String count,
   }) {
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -115,16 +129,17 @@ class FindMatePage extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                description,
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                memo,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ],
           ),
-          Text(currentPeople, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(count, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

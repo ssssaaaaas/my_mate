@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum Category {
-  all,
-  home,
+  korean_food,
+  Late_snack,
+  Chinese,
+  Japanese,
+  Dessert,
+  Western_food
 }
 
 class Product {

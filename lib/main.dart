@@ -13,7 +13,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyMateApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
+      child: const MyMateApp(),
+    ),
+  );
 }
 
 class MyMateApp extends StatelessWidget {
