@@ -1,150 +1,151 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'products.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  final String category; // 선택한 카테고리를 전달받음
+
+  const ChatPage({Key? key, required this.category}) : super(key: key);
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  String _selectedOption = 'men';
-  String? _selectedValue;
-  final List<String> _dropdownItems = ['1명', '2명', '3명', '4명', '5명', '6명이상'];
+  final FirestoreService _firestoreService = FirestoreService();
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _memoController = TextEditingController();
+  String _selectedGender = 'men'; // 기본값
+  String? _selectedCount;
+  final List<String> _dropdownItems = ['1명', '2명', '3명', '4명', '5명', '6명 이상'];
+
+  Future<void> _saveChat() async {
+    final String title = _titleController.text;
+    final String memo = _memoController.text;
+
+    if (title.isEmpty || memo.isEmpty || _selectedCount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 필드를 입력해주세요.')),
+      );
+      return;
+    }
+
+    try {
+      await _firestoreService.addMate(
+        category: widget.category,
+        title: title,
+        memo: memo,
+        gender: _selectedGender,
+        count: _selectedCount!,
+        location: const GeoPoint(0, 0),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('채팅방이 성공적으로 저장되었습니다!')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.close))],
+        title: const Text('채팅방 생성'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(25.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '채팅방 생성',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: '채팅방 이름',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: '채팅방 이름',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              SizedBox(height: 15),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: '카테고리',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _memoController,
+              decoration: InputDecoration(
+                labelText: '메모',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: 'men',
-                        groupValue: _selectedOption,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedOption = value!;
-                          });
-                        },
-                      ),
-                      Text('남자'),
-                    ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButton<String>(
+                    hint: const Text('인원 수'),
+                    value: _selectedCount,
+                    items: _dropdownItems.map((String item) {
+                      return DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(item),
+                      );
+                    }).toList(),
+                    onChanged: (String? value) {
+                      setState(() {
+                        _selectedCount = value;
+                      });
+                    },
                   ),
-                  SizedBox(width: 10),
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: 'woman',
-                        groupValue: _selectedOption,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedOption = value!;
-                          });
-                        },
-                      ),
-                      Text('여자'),
-                    ],
-                  ),
-                  SizedBox(width: 10),
-                  Row(
-                    children: [
-                      Radio<String>(
-                        value: 'doncare',
-                        groupValue: _selectedOption,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedOption = value!;
-                          });
-                        },
-                      ),
-                      Text('남녀무관'),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              DropdownButton<String>(
-                hint: const Text('인원 수'),
-                value: _selectedValue,
-                items: _dropdownItems.map((String item) {
-                  return DropdownMenuItem<String>(
-                    value: item,
-                    child: Text(item),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedValue = newValue;
-                  });
-                },
-              ),
-              SizedBox(
-                height: 100,
-              ),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(15),
                 ),
-                width: 350,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.check, color: Colors.black),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        maxLines: 5,
-                        decoration: InputDecoration(
-                          hintText: '메모',
-                          hintStyle: TextStyle(color: Colors.grey[600]),
-                          border: InputBorder.none,
-                        ),
-                        style: const TextStyle(fontSize: 16),
-                        cursorColor: Colors.black,
-                      ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ListTile(
+                    title: const Text('남성'),
+                    leading: Radio<String>(
+                      value: 'men',
+                      groupValue: _selectedGender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedGender = value!;
+                        });
+                      },
                     ),
-                  ],
+                  ),
                 ),
+                Expanded(
+                  child: ListTile(
+                    title: const Text('여성'),
+                    leading: Radio<String>(
+                      value: 'women',
+                      groupValue: _selectedGender,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedGender = value!;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: _saveChat,
+              child: const Text('저장'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
               ),
-            ]),
+            ),
+          ],
+        ),
       ),
     );
   }
