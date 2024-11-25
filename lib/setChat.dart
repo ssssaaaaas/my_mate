@@ -33,13 +33,17 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection(category).add({
+      final docRef = await FirebaseFirestore.instance.collection(category).add({
         'title': title,
         'gender': _selectedOption,
         'count': _selectedValue,
         'location': [0, 0],
         'memo': memo,
         'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await docRef.update({
+        'id': docRef.id,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

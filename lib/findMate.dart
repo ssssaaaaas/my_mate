@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mymate/chat.dart';
 import 'package:provider/provider.dart';
 import 'category_provider.dart';
 import 'map.dart';
@@ -49,7 +50,7 @@ class FindMatePage extends StatelessWidget {
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
-              .collection(selectedCategory) // 선택된 카테고리의 데이터를 가져옴
+              .collection(selectedCategory)
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -70,10 +71,25 @@ class FindMatePage extends StatelessWidget {
               itemCount: posts.length,
               itemBuilder: (context, index) {
                 final post = posts[index];
-                return ListTile(
-                  title: Text(post['title'] ?? '제목 없음'),
-                  subtitle: Text(post['memo'] ?? '설명 없음'),
-                  trailing: Text(post['count'] ?? '0명'),
+                return InkWell(
+                  child: Wrap(children: [
+                    ListTile(
+                      title: Text(post['title'] ?? '제목 없음'),
+                      subtitle: Text(post['memo'] ?? '설명 없음'),
+                      trailing: Text(post['count'] ?? '0명'),
+                    ),
+                  ]),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          id: post.id, // Firestore 문서의 ID를 전달
+                          category: selectedCategory, // 선택된 category 전달
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );
