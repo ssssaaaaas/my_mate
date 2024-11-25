@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.mymate</string>
+	<string>com.soda.mymate</string>
 	<key>PROJECT_ID</key>
 	<string>my-mate-b5aee</string>
 	<key>STORAGE_BUCKET</key>
