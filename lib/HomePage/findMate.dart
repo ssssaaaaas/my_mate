@@ -38,7 +38,9 @@ class FindMatePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MyMap()),
+                    MaterialPageRoute(
+                      builder: (context) => MyMap(category: selectedCategory),
+                    ),
                   );
                 },
                 icon: Icon(
@@ -87,8 +89,8 @@ class FindMatePage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatScreen(
-                          id: post.id, // Firestore 문서의 ID를 전달
-                          category: selectedCategory, // 선택된 category 전달
+                          id: post.id,
+                          category: selectedCategory,
                         ),
                       ),
                     );
@@ -104,8 +106,7 @@ class FindMatePage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ChatPage(
-                  category: selectedCategory), // Pass category to ChatPage
+              builder: (context) => ChatPage(category: selectedCategory),
             ),
           );
         },
