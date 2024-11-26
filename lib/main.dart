@@ -2,8 +2,10 @@
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'HomePage/category_provider.dart';
 import 'firebase_options.dart';
-import 'home.dart';
+import 'HomePage/home.dart';
 import 'LogIn/login.dart';
 
 void main() async {
@@ -12,7 +14,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyMateApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
+      child: const MyMateApp(),
+    ),
+  );
 }
 
 class MyMateApp extends StatelessWidget {
@@ -20,26 +29,31 @@ class MyMateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MyMate',
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          elevation: 1,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
+      child: MaterialApp(
+        title: 'MyMate',
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.white,
+            elevation: 1,
+          ),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0XFFC5524C),
+            primary: const Color(0XFFC5524C),
+            secondary: const Color(0XFFDC9794),
+          ),
         ),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0XFFC5524C),
-          primary: const Color(0XFFC5524C),
-          secondary: const Color(0XFFDC9794),
-        ),
+        routes: {
+          '/': (context) => const SplashPage(),
+          '/login': (context) => const LoginPage(),
+          '/home': (context) => const HomePage(),
+        },
+        debugShowCheckedModeBanner: false,
       ),
-      routes: {
-        '/': (context) => const SplashPage(),
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const HomePage(),
-      },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

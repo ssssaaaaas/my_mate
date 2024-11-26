@@ -174,7 +174,7 @@ class _Profile2State extends State<Profile2> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(25),
+            padding: const EdgeInsets.fromLTRB(25, 25, 25, 10),
             child: Container(
               height: 200,
               width: 200,
@@ -207,6 +207,7 @@ class _Profile2State extends State<Profile2> {
             icon: const Icon(Icons.camera_alt, size: 30),
             tooltip: '갤러리에서 이미지 선택',
           ),
+          const SizedBox(height: 10),
           _buildTextField('닉네임', _nicknameController),
           const SizedBox(height: 10),
           _buildTextField('이메일', _emailController),
