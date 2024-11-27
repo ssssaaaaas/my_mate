@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:mymate/moveMap.dart';
 import 'products.dart';
 
 class ChatPage extends StatefulWidget {
-  final String category; // 선택한 카테고리를 전달받음
+  final String category;
 
   const ChatPage({Key? key, required this.category}) : super(key: key);
 
@@ -13,18 +15,22 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final FirestoreService _firestoreService = FirestoreService();
-
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _memoController = TextEditingController();
-  String _selectedGender = 'men'; // 기본값
+  String _selectedGender = 'men';
   String? _selectedCount;
+  LatLng? _location;
+
   final List<String> _dropdownItems = ['1명', '2명', '3명', '4명', '5명', '6명 이상'];
 
   Future<void> _saveChat() async {
     final String title = _titleController.text;
     final String memo = _memoController.text;
 
-    if (title.isEmpty || memo.isEmpty || _selectedCount == null) {
+    if (title.isEmpty ||
+        memo.isEmpty ||
+        _selectedCount == null ||
+        _location == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('모든 필드를 입력해주세요.')),
       );
@@ -38,7 +44,7 @@ class _ChatPageState extends State<ChatPage> {
         memo: memo,
         gender: _selectedGender,
         count: _selectedCount!,
-        location: const GeoPoint(0, 0),
+        location: GeoPoint(_location!.latitude, _location!.longitude), // 위치 저장
       );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('채팅방이 성공적으로 저장되었습니다!')),
@@ -48,6 +54,20 @@ class _ChatPageState extends State<ChatPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
       );
+    }
+  }
+
+  Future<void> _pickLocation() async {
+    final LatLng? selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Movelocation(),
+      ),
+    );
+    if (selectedLocation != null) {
+      setState(() {
+        _location = selectedLocation;
+      });
     }
   }
 
@@ -105,36 +125,57 @@ class _ChatPageState extends State<ChatPage> {
             ),
             const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Expanded(
-                  child: ListTile(
-                    title: const Text('남성'),
-                    leading: Radio<String>(
+                Row(
+                  children: [
+                    Radio<String>(
                       value: 'men',
                       groupValue: _selectedGender,
-                      onChanged: (String? value) {
+                      onChanged: (value) {
                         setState(() {
                           _selectedGender = value!;
                         });
                       },
                     ),
-                  ),
+                    Text('남자'),
+                  ],
                 ),
-                Expanded(
-                  child: ListTile(
-                    title: const Text('여성'),
-                    leading: Radio<String>(
-                      value: 'women',
+                SizedBox(width: 10),
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'woman',
                       groupValue: _selectedGender,
-                      onChanged: (String? value) {
+                      onChanged: (value) {
                         setState(() {
                           _selectedGender = value!;
                         });
                       },
                     ),
-                  ),
+                    Text('여자'),
+                  ],
+                ),
+                SizedBox(width: 10),
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'doncare',
+                      groupValue: _selectedGender,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedGender = value!;
+                        });
+                      },
+                    ),
+                    Text('남녀무관'),
+                  ],
                 ),
               ],
+            ),
+            ElevatedButton(
+              onPressed: _pickLocation, // 위치 설정 호출
+              child: Text(_location == null ? '위치 설정' : '위치 수정'),
             ),
             const Spacer(),
             ElevatedButton(

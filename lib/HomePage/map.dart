@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart'; // 현재 위치를 가져오기 위해 필요
+import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyMap extends StatefulWidget {
-  const MyMap({super.key});
+  final String category;
+  const MyMap({super.key, required this.category});
 
   @override
   State<MyMap> createState() => _MyMapState();
@@ -13,22 +15,63 @@ class MyMap extends StatefulWidget {
 
 class _MyMapState extends State<MyMap> {
   final Completer<GoogleMapController> _controller = Completer();
-  final Location _location = Location();
+  final Set<Marker> _markers = {}; // 지도에 표시될 마커들
+
+  Future<void> _fetchLocationsFromFirebase() async {
+    try {
+      final collection = FirebaseFirestore.instance.collection(widget.category);
+      final querySnapshot = await collection.get();
+
+      final Set<Marker> markers = querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            final GeoPoint? location = data['location'];
+            if (location != null) {
+              return Marker(
+                markerId: MarkerId(doc.id),
+                position: LatLng(location.latitude, location.longitude),
+                infoWindow: InfoWindow(
+                  title: data['title'] ?? '제목 없음',
+                  snippet: data['memo'] ?? '설명 없음',
+                ),
+              );
+            }
+            return null;
+          })
+          .whereType<Marker>()
+          .toSet();
+
+      setState(() {
+        _markers.addAll(markers);
+      });
+    } catch (e) {
+      print("Firebase에서 데이터를 가져오는 데 실패했습니다: $e");
+    }
+  }
 
   Future<void> _goToCurrentLocation() async {
     try {
-      final currentLocation = await _location.getLocation();
+      Position currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
       final GoogleMapController controller = await _controller.future;
 
       controller.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
-          target: LatLng(currentLocation.latitude!, currentLocation.longitude!),
+          target: LatLng(currentPosition.latitude, currentPosition.longitude),
           zoom: 14.0,
         ),
       ));
     } catch (e) {
       print("현재 위치를 가져오는 데 실패했습니다: $e");
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocationsFromFirebase(); // Firebase에서 위치 데이터를 가져옵니다.
   }
 
   @override
@@ -59,16 +102,7 @@ class _MyMapState extends State<MyMap> {
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             zoomControlsEnabled: false,
-            markers: {
-              Marker(
-                markerId: MarkerId('1'),
-                position: initialLocation,
-                infoWindow: InfoWindow(
-                  title: '현재 위치',
-                  snippet: '여기에 설명 추가 가능',
-                ),
-              ),
-            },
+            markers: _markers,
             onMapCreated: (GoogleMapController controller) {
               _controller.complete(controller);
             },

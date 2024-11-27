@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../findmate.dart';
+import 'package:mymate/HomePage/findMate.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

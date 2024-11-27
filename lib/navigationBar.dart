@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mymate/mypage/mypage.dart';
+import 'CalenerPage/Calendar.dart';
 import 'HomePage/home.dart';
 import 'RecommendPage/foodAI.dart';
 
@@ -16,6 +17,7 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
   final List<Widget> _pages = [
     const HomePage(),
     const FoodAIPage(),
+    Calendar(),
     const MyPage(),
   ];
 
@@ -80,6 +82,12 @@ class _MyNavigationBarState extends State<MyNavigationBar> {
                       size: 28,
                     ),
                     label: '메뉴 추천'),
+                BottomNavigationBarItem(
+                    icon: Icon(
+                      Icons.calendar_month,
+                      size: 28,
+                    ),
+                    label: '캘린더'),
                 BottomNavigationBarItem(
                     icon: Icon(
                       Icons.person_2,

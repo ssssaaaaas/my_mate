@@ -25,4 +25,10 @@ class FirestoreService {
       print('Failed to add document to $category: $e');
     }
   }
+
+  getCalendarEntry(String uid, DateTime date) {}
+
+  deleteCalendarEntry(String uid, DateTime date) {}
+
+  saveCalendarEntry(String uid, DateTime date, String text, String? s) {}
 }
