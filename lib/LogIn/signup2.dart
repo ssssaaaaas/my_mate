@@ -14,7 +14,6 @@ class SignUpPage2 extends StatefulWidget {
 class _SignUpPage2State extends State<SignUpPage2> {
   final TextEditingController _nickNameController = TextEditingController();
   final TextEditingController _genderController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -33,7 +32,6 @@ class _SignUpPage2State extends State<SignUpPage2> {
       await _firestore.collection('users').doc(currentUser.uid).update({
         'nickName': _nickNameController.text.trim(),
         'gender': _genderController.text.trim(),
-        'location': _locationController.text.trim(),
       });
 
       showCustomSnackbar(context, "회원 정보가 저장되었습니다.");
@@ -48,14 +46,12 @@ class _SignUpPage2State extends State<SignUpPage2> {
     super.initState();
     _nickNameController.addListener(_validateFields);
     _genderController.addListener(_validateFields);
-    _locationController.addListener(_validateFields);
   }
 
   void _validateFields() {
     setState(() {
       _isAllFieldsFilled = _nickNameController.text.trim().isNotEmpty &&
           _genderController.text.trim().isNotEmpty &&
-          _locationController.text.trim().isNotEmpty &&
           _isNicknameChecked;
     });
   }
@@ -218,9 +214,6 @@ class _SignUpPage2State extends State<SignUpPage2> {
                 _buildNicknameField(),
                 const SizedBox(height: 16.0),
                 _buildTextField('성별', _genderController, false, hintText: '성별'),
-                const SizedBox(height: 16),
-                _buildTextField('위치', _locationController, false,
-                    hintText: '나의 위치'),
                 const SizedBox(height: 100),
                 SizedBox(
                   width: 330,
@@ -229,7 +222,6 @@ class _SignUpPage2State extends State<SignUpPage2> {
                     onPressed: () {
                       if (_nickNameController.text.trim().isEmpty ||
                           _genderController.text.trim().isEmpty ||
-                          _locationController.text.trim().isEmpty ||
                           !_isNicknameChecked) {
                         showCustomSnackbar(context, '모든 필드를 올바르게 채워주세요.');
                       } else {

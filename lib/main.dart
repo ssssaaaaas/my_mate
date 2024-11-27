@@ -1,11 +1,12 @@
+// main, splash
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'HomePage/category_provider.dart';
 import 'firebase_options.dart';
-import 'home.dart';
+import 'HomePage/home.dart';
 import 'LogIn/login.dart';
-import 'category_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +14,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyMateApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
+      child: const MyMateApp(),
+    ),
+  );
 }
 
 class MyMateApp extends StatelessWidget {

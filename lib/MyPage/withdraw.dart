@@ -15,35 +15,37 @@ class _WithdrawPageState extends State<WithdrawPage> {
   final TextEditingController _nicknameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  String _nickname = ''; // 닉네임 저장할 변수 추가
+  String? _profileImageUrl;
+  String nickName = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserNickname(); // 페이지 로드 시 닉네임 가져오기
+    _loadNickName();
   }
 
-  Future<void> _fetchUserNickname() async {
-    try {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        DocumentSnapshot userDoc =
-            await _firestore.collection('users').doc(user.uid).get();
-
-        setState(() {
-          _nickname = userDoc['nickname'] ?? ''; // 닉네임 필드에서 가져오기
-        });
-      }
-    } catch (e) {
-      print("닉네임 가져오기 실패: $e");
-      showCustomSnackbar(context, "닉네임을 불러오는 데 실패했습니다.");
+  Future<void> _loadNickName() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.exists) {
+          setState(() {
+            nickName = snapshot['nickName'] ?? '';
+            _profileImageUrl = snapshot['profileImage'] ?? '';
+          });
+        }
+      });
     }
   }
 
   Future<void> _deleteAccount() async {
     String enteredNickname = _nicknameController.text.trim();
 
-    if (enteredNickname == _nickname) {
+    if (enteredNickname == nickName) {
       try {
         User? user = _auth.currentUser;
         if (user != null) {
@@ -123,10 +125,10 @@ class _WithdrawPageState extends State<WithdrawPage> {
             ),
             const SizedBox(height: 16),
             TextField(
-              cursorColor: const Color(0XFFFFDCB2),
+              cursorColor: const Color(0XFFC5524C),
               controller: _nicknameController,
               decoration: InputDecoration(
-                labelText: _nickname, // 동적으로 가져온 닉네임 사용
+                labelText: nickName,
                 hintText: '닉네임을 입력해주세요',
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

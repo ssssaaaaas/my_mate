@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mymate/mypage/mypage.dart';
-import 'home.dart';
-import 'foodAI.dart';
+import 'HomePage/home.dart';
+import 'RecommendPage/foodAI.dart';
 
 class MyNavigationBar extends StatefulWidget {
   const MyNavigationBar({Key? key}) : super(key: key);
