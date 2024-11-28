@@ -16,12 +16,14 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _auth = FirebaseAuth.instance;
   User? loggedInUser;
-  String? nickName; // 닉네임 저장
+  String? nickName;
+  String? title;
 
   @override
   void initState() {
     super.initState();
     getCurrentUser();
+    getCategoryTitle();
   }
 
   Future<void> getCurrentUser() async {
@@ -31,15 +33,15 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           loggedInUser = user;
         });
-        // 닉네임 가져오기
+
         final userDoc = await FirebaseFirestore.instance
-            .collection('users') // 사용자 정보를 저장한 컬렉션 이름
-            .doc(user.uid) // 로그인한 사용자의 UID로 문서 찾기
+            .collection('users')
+            .doc(user.uid)
             .get();
 
         if (userDoc.exists) {
           setState(() {
-            nickName = userDoc.data()?['nickName']; // Firestore에서 닉네임 가져오기
+            nickName = userDoc.data()?['nickName'];
           });
         } else {
           print("User document does not exist.");
@@ -47,6 +49,25 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       print("Error getting current user: $e");
+    }
+  }
+
+  Future<void> getCategoryTitle() async {
+    try {
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection(widget.category)
+          .doc(widget.id)
+          .get();
+
+      if (docSnapshot.exists) {
+        setState(() {
+          title = docSnapshot.data()?['title'];
+        });
+      } else {
+        print("Document does not exist.");
+      }
+    } catch (e) {
+      print("Error getting category title: $e");
     }
   }
 
@@ -61,7 +82,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .collection('messages')
           .add({
         'text': _controller.text,
-        'sender': nickName, // 닉네임 저장
+        'sender': nickName,
         'timestamp': Timestamp.now(),
       });
       _controller.clear();
@@ -72,30 +93,14 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _decrementCurrentCount() async {
-    try {
-      final docRef =
-          FirebaseFirestore.instance.collection(widget.category).doc(widget.id);
-
-      await docRef.update({
-        'currentCount': FieldValue.increment(-1),
-      });
-    } catch (e) {
-      print("Error decrementing currentCount: $e");
-    }
-  }
-
-  @override
-  void dispose() {
-    // 화면이 닫힐 때 currentCount 감소
-    _decrementCurrentCount();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(
+          title ?? 'Chat',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.exit_to_app),
@@ -106,102 +111,126 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection(widget.category)
-                  .doc(widget.id)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text("No messages yet."));
-                }
-                final chatDocs = snapshot.data!.docs;
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: chatDocs.length,
-                  itemBuilder: (ctx, index) {
-                    bool isMe =
-                        chatDocs[index]['sender'] == nickName; // 닉네임으로 비교
-                    return Column(
-                      crossAxisAlignment: isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            chatDocs[index]['sender'], // 닉네임 표시
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[600],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Color(0XFFFFBAB6)],
+          ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection(widget.category)
+                    .doc(widget.id)
+                    .collection('messages')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(child: Text("No messages yet."));
+                  }
+                  final chatDocs = snapshot.data!.docs;
+                  return ListView.builder(
+                    reverse: true,
+                    itemCount: chatDocs.length,
+                    itemBuilder: (ctx, index) {
+                      bool isMe = chatDocs[index]['sender'] == nickName;
+                      return Column(
+                        crossAxisAlignment: isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              chatDocs[index]['sender'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
                             ),
                           ),
-                        ),
-                        Row(
-                          mainAxisAlignment: isMe
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 16),
-                              margin: EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 8),
-                              decoration: BoxDecoration(
-                                color:
-                                    isMe ? Colors.grey[300] : Colors.grey[500],
-                                borderRadius: isMe
-                                    ? BorderRadius.only(
-                                        topLeft: Radius.circular(14),
-                                        topRight: Radius.circular(14),
-                                        bottomLeft: Radius.circular(14),
-                                      )
-                                    : BorderRadius.only(
-                                        topLeft: Radius.circular(14),
-                                        topRight: Radius.circular(14),
-                                        bottomRight: Radius.circular(14),
-                                      ),
+                          Row(
+                            mainAxisAlignment: isMe
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 16),
+                                margin: EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: isMe
+                                      ? Colors.grey[100]
+                                      : Color(0XFFD76F69),
+                                  borderRadius: isMe
+                                      ? BorderRadius.only(
+                                          topLeft: Radius.circular(14),
+                                          topRight: Radius.circular(14),
+                                          bottomLeft: Radius.circular(14),
+                                        )
+                                      : BorderRadius.only(
+                                          topLeft: Radius.circular(14),
+                                          topRight: Radius.circular(14),
+                                          bottomRight: Radius.circular(14),
+                                        ),
+                                ),
+                                child: Text(
+                                  chatDocs[index]['text'],
+                                  style: TextStyle(fontSize: 16),
+                                ),
                               ),
-                              child: Text(
-                                chatDocs[index]['text'],
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(labelText: 'Send a message...'),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      cursorColor: Color(0XFFC5524C),
+                      decoration: InputDecoration(
+                        hintText: 'Send a message...',
+                        hintStyle: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0XFF4E5968),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      ),
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(
+                      Icons.send,
+                      color: Color(0XFF4E5968),
+                    ),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
