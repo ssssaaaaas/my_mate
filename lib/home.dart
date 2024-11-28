@@ -1,9 +1,50 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:pie_chart/pie_chart.dart';
 import 'findmate.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final Map<String, double> _categoryCounts = {}; // 카테고리별 문서 개수 저장
+  late Future<void> _fetchFuture; // FutureBuilder용 Future
+
+  // initState() 메서드에 print 추가
+  @override
+  void initState() {
+    super.initState();
+    _fetchFuture = _fetchCategoryCounts(
+      ['Korean', 'Chinese', 'Japanese', 'Western', 'Dessert', 'LateSnack'],
+      _categoryCounts,
+    ).then((_) {
+      print("Final _categoryCounts: $_categoryCounts"); // 데이터 확인
+    });
+  }
+
+  /// Firestore에서 카테고리별 문서 개수를 가져오는 함수
+  Future<void> _fetchCategoryCounts(
+      List<String> categories, Map<String, double> categoryCounts) async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    for (String category in categories) {
+      try {
+        final QuerySnapshot snapshot =
+            await firestore.collection(category).get();
+        categoryCounts[category] = snapshot.docs.length.toDouble(); // 문서 개수 저장
+        print("Category: $category, Count: ${snapshot.docs.length}"); // 디버깅 로그
+      } catch (e) {
+        print("Error fetching category $category: $e"); // 오류 로그
+      }
+    }
+    print("Final Category Counts: $categoryCounts"); // 최종 데이터 로그
+    setState(() {}); // 상태 업데이트
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +57,64 @@ class HomePage extends StatelessWidget {
               'assets/logo.png',
             ),
           ),
-          const SizedBox(height: 150),
+          const SizedBox(height: 50),
+
+          // Pie Chart Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: FutureBuilder(
+              future: _fetchFuture, // 데이터를 가져오는 Future
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("데이터 로드 중 오류 발생: ${snapshot.error}"),
+                  );
+                }
+
+                // 데이터가 없거나 값이 모두 0일 경우
+                if (_categoryCounts.isEmpty ||
+                    _categoryCounts.values.every((count) => count == 0)) {
+                  return const Center(child: Text("차트에 표시할 데이터가 없습니다."));
+                }
+
+                // PieChart 렌더링
+                return PieChart(
+                  dataMap: _categoryCounts, // 카테고리 데이터
+                  animationDuration: const Duration(milliseconds: 800),
+                  chartType: ChartType.ring,
+                  ringStrokeWidth: 32,
+                  colorList: [
+                    Colors.blue,
+                    Colors.red,
+                    Colors.orange,
+                    Colors.green,
+                    Colors.purple,
+                    Colors.yellow,
+                  ],
+                  chartValuesOptions: const ChartValuesOptions(
+                    showChartValuesInPercentage: true,
+                    showChartValues: true,
+                    chartValueBackgroundColor: Colors.grey,
+                  ),
+                  legendOptions: const LegendOptions(
+                    showLegends: true,
+                    legendShape: BoxShape.rectangle,
+                    legendPosition: LegendPosition.bottom,
+                    legendTextStyle: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  centerText: "Rooms",
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 50),
+
+          // 카테고리 버튼 섹션
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 10,
@@ -67,6 +165,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  /// Lottie 애니메이션 버튼
   Widget _buildLottieCircle(
       BuildContext context, String lottieUrl, String category) {
     return GestureDetector(
