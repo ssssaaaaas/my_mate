@@ -83,9 +83,9 @@ class _CalendarState extends State<Calendar> {
 
     // 상태 업데이트를 비동기적으로 처리
     setState(() {
-      _statsText = '가장 많이 먹은 음식은 "$mostEatenFoodType" 입니다!\n'
-          '   한식 - ${counts['한식']}번  중식 - ${counts['중식']}번  일식 - ${counts['일식']}번  \n'
-          ' 양식 - ${counts['양식']}번  야식 - ${counts['야식']}번  디저트 - ${counts['디저트']}번';
+      _statsText = '          🍴 가장 많이 먹은 음식은 "$mostEatenFoodType" 입니다! 🍴\n'
+          '🍚 한식        ${counts['한식']}번  |  🥡 중식        ${counts['중식']}번  |  🍣 일식        ${counts['일식']}번\n'
+          '🍝 양식        ${counts['양식']}번  |  🌙 야식        ${counts['야식']}번  |  🍰 디저트      ${counts['디저트']}번';
     });
   }
 
@@ -157,7 +157,7 @@ class _CalendarState extends State<Calendar> {
       body: Column(
         children: <Widget>[
           Container(
-            height: 240,
+            height: 220,
             color: Color(0XFFD76F69),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -268,7 +268,7 @@ class _CalendarState extends State<Calendar> {
               ],
             ),
           ),
-          const SizedBox(height: 45),
+          const SizedBox(height: 20),
           Expanded(
             child: Stack(
               children: [
@@ -335,9 +335,17 @@ class _CalendarState extends State<Calendar> {
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 17),
-            child: Text(
-              _statsText,
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Container(
+              height: 100,
+              width: 370,
+              child: Card(
+                child: Center(
+                  child: Text(
+                    _statsText,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
             ),
           )
         ],
