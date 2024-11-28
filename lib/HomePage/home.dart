@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
         final QuerySnapshot snapshot =
             await firestore.collection(category).get();
         categoryCounts[_getCategoryLabel(category)] =
-            snapshot.docs.length.toDouble(); // 문서 개수 저장
+            snapshot.docs.length.toDouble();
       } catch (e) {
         print("Error fetching category $category: $e");
       }
@@ -49,16 +49,13 @@ class _HomePageState extends State<HomePage> {
       body: ListView(
         children: [
           const SizedBox(height: 50),
-
           Center(
             child: Image.asset(
               'assets/logo.png',
               height: 100,
             ),
           ),
-
           const SizedBox(height: 20),
-
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
             child: Center(
@@ -72,8 +69,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-
-          // 순위 및 차트 섹션
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: FutureBuilder(
@@ -106,9 +101,7 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
-
           const SizedBox(height: 30),
-
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 10,
@@ -119,16 +112,19 @@ class _HomePageState extends State<HomePage> {
                   _buildLottieCircle(
                       context,
                       "https://lottie.host/38977bd0-40ec-4a0a-b57e-6b5ab196c761/Lp9GuVzlsK.json",
+                      '한식',
                       'Korean'),
                   const SizedBox(width: 10),
                   _buildLottieCircle(
                       context,
                       "https://lottie.host/bfc93f77-20a0-4f4b-9d87-4242beaad756/HqbFaYRD21.json",
+                      '중식',
                       'Chinese'),
                   const SizedBox(width: 10),
                   _buildLottieCircle(
                       context,
                       "https://lottie.host/e3d0f572-cc1a-47a2-9712-9c6a892fe684/kBtkxl7hoi.json",
+                      '일식',
                       'Japanese'),
                 ],
               ),
@@ -139,16 +135,19 @@ class _HomePageState extends State<HomePage> {
                   _buildLottieCircle(
                       context,
                       "https://lottie.host/663b3be2-3e78-4a34-b804-00d1ec4e7d34/EPoCzQGDM4.json",
+                      '양식',
                       'Western'),
                   const SizedBox(width: 10),
                   _buildLottieCircle(
                       context,
-                      "https://lottie.host/057124e7-20d3-49c9-9f9f-39aff106d9d7/yG4BgeBHOU.json",
+                      "https://lottie.host/057124e7-20d3-49c9-9d9f-39aff106d9d7/yG4BgeBHOU.json",
+                      '디저트',
                       'Dessert'),
                   const SizedBox(width: 10),
                   _buildLottieCircle(
                       context,
                       "https://lottie.host/be08b500-e95e-4ca3-b993-6b021bfb1abc/K0L7LBexhS.json",
+                      '야식',
                       'LateSnack'),
                 ],
               ),
@@ -159,10 +158,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 인기 카테고리 표시
   Widget _buildTopCategory() {
     final sortedCategories = _categoryCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value)); // 내림차순 정렬
+      ..sort((a, b) => b.value.compareTo(a.value));
     final mostPopular =
         sortedCategories.isNotEmpty ? sortedCategories.first.key : null;
 
@@ -187,7 +185,6 @@ class _HomePageState extends State<HomePage> {
         : const SizedBox();
   }
 
-  /// 순위 목록 표시
   Widget _buildCategoryRanking() {
     final sortedCategories = _categoryCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -233,63 +230,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildCategoryChart() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: PieChart(
-            dataMap: _categoryCounts,
-            animationDuration: const Duration(milliseconds: 800),
-            chartType: ChartType.ring,
-            ringStrokeWidth: 32,
-            chartRadius: MediaQuery.of(context).size.width * 0.55,
-            colorList: [
-              Colors.blue,
-              Colors.red,
-              Colors.orange,
-              Colors.green,
-              Colors.purple,
-              Colors.yellow,
-            ],
-            chartValuesOptions: const ChartValuesOptions(
-              showChartValuesInPercentage: true,
-              showChartValues: true,
-              chartValueBackgroundColor: Colors.grey,
-            ),
-            legendOptions: const LegendOptions(
-              showLegends: false,
-            ),
-            centerText: "Rooms",
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: _categoryCounts.keys.map((category) {
-              final color = _getCategoryColor(category);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      color: color,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      category,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+    return PieChart(
+      dataMap: _categoryCounts,
+      animationDuration: const Duration(milliseconds: 800),
+      chartType: ChartType.ring,
+      ringStrokeWidth: 32,
+      chartRadius: MediaQuery.of(context).size.width * 0.6,
+      colorList: [
+        Colors.blue,
+        Colors.red,
+        Colors.orange,
+        Colors.green,
+        Colors.purple,
+        Colors.yellow,
       ],
+      chartValuesOptions: const ChartValuesOptions(
+        showChartValuesInPercentage: true,
+        showChartValues: true,
+        chartValueBackgroundColor: Colors.grey,
+      ),
+      legendOptions: const LegendOptions(
+        showLegends: true,
+      ),
+      centerText: "Rooms",
     );
   }
 
@@ -332,14 +295,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildLottieCircle(
-      BuildContext context, String lottieUrl, String category) {
+      BuildContext context, String lottieUrl, String label, String category) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                FindMatePage(selectedCategory: _getCategoryLabel(category)),
+            builder: (context) => FindMatePage(selectedCategory: category),
           ),
         );
       },
@@ -382,7 +344,7 @@ class _HomePageState extends State<HomePage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
-                  category,
+                  label,
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
