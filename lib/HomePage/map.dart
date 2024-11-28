@@ -15,7 +15,10 @@ class MyMap extends StatefulWidget {
 
 class _MyMapState extends State<MyMap> {
   final Completer<GoogleMapController> _controller = Completer();
-  final Set<Marker> _markers = {}; // 지도에 표시될 마커들
+  final Set<Marker> _markers = {};
+
+  String? _selectedTitle = null;
+  String? _selectedLocation = null;
 
   Future<void> _fetchLocationsFromFirebase() async {
     try {
@@ -71,7 +74,7 @@ class _MyMapState extends State<MyMap> {
   @override
   void initState() {
     super.initState();
-    _fetchLocationsFromFirebase(); // Firebase에서 위치 데이터를 가져옵니다.
+    _fetchLocationsFromFirebase();
   }
 
   @override

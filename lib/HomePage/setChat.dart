@@ -174,7 +174,7 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
             ElevatedButton(
-              onPressed: _pickLocation, // 위치 설정 호출
+              onPressed: _pickLocation,
               child: Text(_location == null ? '위치 설정' : '위치 수정'),
             ),
             const Spacer(),

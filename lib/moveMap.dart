@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -63,13 +62,17 @@ class _MovelocationState extends State<Movelocation> {
               child: const Icon(Icons.my_location),
             ),
           ),
+          Positioned(
+            bottom: 100,
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.pop(context, _currentPosition);
+              },
+              child: const Icon(Icons.check),
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pop(context, _currentPosition);
-        },
-        child: const Icon(Icons.check),
       ),
     );
   }
