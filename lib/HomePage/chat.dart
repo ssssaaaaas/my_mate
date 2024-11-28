@@ -77,7 +77,6 @@ class _ChatScreenState extends State<ChatScreen> {
       final docRef =
           FirebaseFirestore.instance.collection(widget.category).doc(widget.id);
 
-      // Firestore에서 currentCount 감소
       await docRef.update({
         'currentCount': FieldValue.increment(-1),
       });
