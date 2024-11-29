@@ -12,6 +12,7 @@ class FindMatePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool _isJoining = false; // 클릭 중복 방지용 플래그
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -83,42 +84,71 @@ class FindMatePage extends StatelessWidget {
                 final currentCount = post['currentCount'] ?? 0; // 현재 인원 (기본값 0)
 
                 return InkWell(
-                  child: Wrap(
-                    children: [
-                      ListTile(
-                        title: Text(post['title'] ?? '제목 없음'),
-                        subtitle: Text(post['memo'] ?? '설명 없음'),
-                        trailing: Text('$currentCount / $maxCount 명'),
-                      ),
-                    ],
-                  ),
-                  onTap: () async {
-                    if (currentCount >= maxCount) {
-                      // 입장 제한
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('최대 인원에 도달하여 입장할 수 없습니다.')),
-                      );
-                    } else {
-                      // 입장 가능: Firestore에서 currentCount 증가
-                      await FirebaseFirestore.instance
-                          .collection(selectedCategory)
-                          .doc(post.id)
-                          .update({
-                        'currentCount': FieldValue.increment(1), // 현재 인원 증가
-                      });
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            id: post.id,
-                            category: selectedCategory,
-                          ),
+                    child: Wrap(
+                      children: [
+                        ListTile(
+                          title: Text(post['title'] ?? '제목 없음'),
+                          subtitle: Text(post['memo'] ?? '설명 없음'),
+                          trailing: Text('$currentCount / $maxCount 명'),
                         ),
-                      );
-                    }
-                  },
-                );
+                      ],
+                    ),
+                    onTap: () async {
+                      if (_isJoining) return; // 이미 클릭한 상태라면 함수 종료
+                      _isJoining = true; // 클릭 중복 방지 플래그 설정
+
+                      try {
+                        if (currentCount >= maxCount) {
+                          // 입장 제한
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('최대 인원에 도달하여 입장할 수 없습니다.')),
+                          );
+                        } else {
+                          // Firestore 트랜잭션을 사용하여 currentCount 안전하게 증가
+                          final docRef = FirebaseFirestore.instance
+                              .collection(selectedCategory)
+                              .doc(post.id);
+
+                          await FirebaseFirestore.instance
+                              .runTransaction((transaction) async {
+                            final snapshot = await transaction.get(docRef);
+
+                            if (!snapshot.exists) {
+                              throw Exception("Document does not exist!");
+                            }
+
+                            final currentCountInTransaction =
+                                snapshot.data()?['currentCount'] ?? 0;
+
+                            if (currentCountInTransaction >= maxCount) {
+                              throw Exception("Maximum participants reached.");
+                            }
+
+                            transaction.update(docRef, {
+                              'currentCount': currentCountInTransaction + 1,
+                            });
+                          });
+
+                          // 트랜잭션 성공 후 채팅 화면으로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                id: post.id,
+                                category: selectedCategory,
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        // 에러 처리
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('입장 처리 중 오류가 발생했습니다: $e')),
+                        );
+                      } finally {
+                        _isJoining = false; // 작업 완료 후 플래그 해제
+                      }
+                    });
               },
             );
           },
