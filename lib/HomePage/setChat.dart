@@ -18,10 +18,10 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _memoController = TextEditingController();
   String _selectedGender = 'men';
-  String? _selectedCount;
+  int? _selectedCount;
   LatLng? _location;
 
-  final List<String> _dropdownItems = ['1명', '2명', '3명', '4명', '5명', '6명 이상'];
+  final List<int> _dropdownItems = [1, 2, 3, 4, 5, 6]; // 인원 수를 정수로 정의
 
   Future<void> _saveChat() async {
     final String title = _titleController.text;
@@ -43,8 +43,9 @@ class _ChatPageState extends State<ChatPage> {
         title: title,
         memo: memo,
         gender: _selectedGender,
-        count: _selectedCount!,
+        count: _selectedCount!, // 정수형으로 저장
         location: GeoPoint(_location!.latitude, _location!.longitude), // 위치 저장
+        currentCount: 0, // 기본값 설정
       );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('채팅방이 성공적으로 저장되었습니다!')),
@@ -105,16 +106,16 @@ class _ChatPageState extends State<ChatPage> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButton<String>(
+                  child: DropdownButton<int>(
                     hint: const Text('인원 수'),
                     value: _selectedCount,
-                    items: _dropdownItems.map((String item) {
-                      return DropdownMenuItem<String>(
+                    items: _dropdownItems.map((int item) {
+                      return DropdownMenuItem<int>(
                         value: item,
-                        child: Text(item),
+                        child: Text('$item명'), // 정수 값을 '1명', '2명' 형태로 표시
                       );
                     }).toList(),
-                    onChanged: (String? value) {
+                    onChanged: (int? value) {
                       setState(() {
                         _selectedCount = value;
                       });
@@ -174,7 +175,7 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
             ElevatedButton(
-              onPressed: _pickLocation, // 위치 설정 호출
+              onPressed: _pickLocation,
               child: Text(_location == null ? '위치 설정' : '위치 수정'),
             ),
             const Spacer(),

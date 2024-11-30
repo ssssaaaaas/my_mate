@@ -8,8 +8,9 @@ class FirestoreService {
     required String title,
     required String memo,
     required String gender,
-    required String count,
+    required int count,
     required GeoPoint location,
+    required int currentCount,
   }) async {
     try {
       await _firestore.collection(category).add({
@@ -19,6 +20,7 @@ class FirestoreService {
         'count': count,
         'location': location,
         'createdAt': FieldValue.serverTimestamp(),
+        'currentCount': currentCount,
       });
       print('Document successfully added to $category collection!');
     } catch (e) {

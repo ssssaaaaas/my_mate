@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import 'category_provider.dart';
-import 'chat.dart';
-import 'map.dart';
-import 'setChat.dart';
+import 'package:mymate/HomePage/chat.dart';
+import 'package:mymate/HomePage/map.dart';
+import 'package:mymate/HomePage/setChat.dart';
 
 class FindMatePage extends StatelessWidget {
   final String selectedCategory;
@@ -14,6 +12,7 @@ class FindMatePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool _isJoining = false; // 클릭 중복 방지용 플래그
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -32,8 +31,7 @@ class FindMatePage extends StatelessWidget {
             child: Container(
               width: 30,
               height: 35,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(),
+              clipBehavior: Clip.none,
               child: IconButton(
                 onPressed: () {
                   Navigator.push(
@@ -63,7 +61,9 @@ class FindMatePage extends StatelessWidget {
             }
 
             if (snapshot.hasError) {
-              return const Center(child: Text('데이터 로드 중 오류가 발생했습니다.'));
+              return const Center(
+                child: Text('데이터 로드 중 오류가 발생했습니다.'),
+              );
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -76,26 +76,79 @@ class FindMatePage extends StatelessWidget {
               itemCount: posts.length,
               itemBuilder: (context, index) {
                 final post = posts[index];
+
+                // Firestore 데이터 안전하게 변환
+                final maxCount =
+                    int.tryParse(post['count']?.toString() ?? '0') ??
+                        0; // 최대 인원
+                final currentCount = post['currentCount'] ?? 0; // 현재 인원 (기본값 0)
+
                 return InkWell(
-                  child: Wrap(children: [
-                    ListTile(
-                      title: Text(post['title'] ?? '제목 없음'),
-                      subtitle: Text(post['memo'] ?? '설명 없음'),
-                      trailing: Text(post['count'] ?? '0명'),
-                    ),
-                  ]),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          id: post.id,
-                          category: selectedCategory,
+                    child: Wrap(
+                      children: [
+                        ListTile(
+                          title: Text(post['title'] ?? '제목 없음'),
+                          subtitle: Text(post['memo'] ?? '설명 없음'),
+                          trailing: Text('$currentCount / $maxCount 명'),
                         ),
-                      ),
-                    );
-                  },
-                );
+                      ],
+                    ),
+                    onTap: () async {
+                      if (_isJoining) return; // 이미 클릭한 상태라면 함수 종료
+                      _isJoining = true; // 클릭 중복 방지 플래그 설정
+
+                      try {
+                        if (currentCount >= maxCount) {
+                          // 입장 제한
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('최대 인원에 도달하여 입장할 수 없습니다.')),
+                          );
+                        } else {
+                          // Firestore 트랜잭션을 사용하여 currentCount 안전하게 증가
+                          final docRef = FirebaseFirestore.instance
+                              .collection(selectedCategory)
+                              .doc(post.id);
+
+                          await FirebaseFirestore.instance
+                              .runTransaction((transaction) async {
+                            final snapshot = await transaction.get(docRef);
+
+                            if (!snapshot.exists) {
+                              throw Exception("Document does not exist!");
+                            }
+
+                            final currentCountInTransaction =
+                                snapshot.data()?['currentCount'] ?? 0;
+
+                            if (currentCountInTransaction >= maxCount) {
+                              throw Exception("Maximum participants reached.");
+                            }
+
+                            transaction.update(docRef, {
+                              'currentCount': currentCountInTransaction + 1,
+                            });
+                          });
+
+                          // 트랜잭션 성공 후 채팅 화면으로 이동
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                id: post.id,
+                                category: selectedCategory,
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        // 에러 처리
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('입장 처리 중 오류가 발생했습니다: $e')),
+                        );
+                      } finally {
+                        _isJoining = false; // 작업 완료 후 플래그 해제
+                      }
+                    });
               },
             );
           },
@@ -113,57 +166,8 @@ class FindMatePage extends StatelessWidget {
         child: const Icon(Icons.edit, color: Colors.white),
         backgroundColor: Theme.of(context).colorScheme.primary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), // 둥글기 설정
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(BuildContext context, String label) {
-    final selectedCategory = context.watch<CategoryProvider>().selectedCategory;
-
-    return GestureDetector(
-      onTap: () {
-        context.read<CategoryProvider>().setSelectedCategory(label);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selectedCategory == label ? Colors.red : Color(0xFFD9D9D9),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 12)),
-      ),
-    );
-  }
-
-  Widget _buildMatePost({
-    required String title,
-    required String memo,
-    required String count,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                memo,
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
-              ),
-            ],
-          ),
-          Text(count, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }
